@@ -10,6 +10,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -30,8 +31,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Canvas
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -49,7 +52,6 @@ private var yw by mutableFloatStateOf(0f)
 
 
 private lateinit var sensorManager: SensorManager
-private var LLLLLLLL:Float = 0f
 
 class MainActivity : ComponentActivity(), SensorEventListener {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -69,11 +71,8 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         setContent {
             AA2_Laberinto_AlejandroPereira_VictorRafalesTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    SensorScreen(x,y,z,
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                    CustomCanvas()
-                    ShowTime()
+
+                    SimpleGame(modifier = Modifier.padding(innerPadding))
                 }
             }
         }
@@ -111,10 +110,58 @@ fun ShowTime(){
             elapsed = SystemClock.elapsedRealtime()-starTime
         }
     }
-    LLLLLLLL = elapsed.toFloat()
     Text("Tiempo: ${elapsed}")
 
 }
+
+
+@Composable
+fun SimpleGame(modifier: Modifier) {
+    var circleX by remember { mutableFloatStateOf(16f) }
+    var speedX by remember { mutableFloatStateOf(0f) }
+
+    var moveLeft by remember { mutableStateOf(false) }
+    var moveRight by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        delay(16)
+        speedX = 0f
+        if (moveLeft) {
+            speedX = -5f
+        }
+        if (moveRight) {
+            speedX = 5f
+        }
+        circleX += speedX
+
+    }
+
+    Canvas(modifier = Modifier.fillMaxSize().pointerInput(Unit) {
+        detectTapGestures { offset ->
+            val w = size.width
+            moveRight = false
+
+            moveLeft = false
+
+            if (offset.x < w / 3) {
+                moveLeft = true
+
+            } else if (offset.x > 2 * w / 3) {
+                moveRight = true
+            }
+
+        }
+
+    }
+
+    ) {
+        drawCircle(
+            color = Color.Red, radius = 40f,
+            center = Offset(circleX, size.height)
+        )
+    }
+}
+
 
 @Composable
 fun CustomCanvas(){
@@ -128,7 +175,7 @@ fun CustomCanvas(){
         drawCircle(
             color = Color.Yellow,
             radius = 250.dp.toPx(),
-            center = Offset(40.dp.toPx(), 200.dp.toPx() + LLLLLLLL.dp.toPx())
+            center = Offset(40.dp.toPx(), 200.dp.toPx())
         )
     }
 
@@ -136,13 +183,12 @@ fun CustomCanvas(){
 }
 
 
-
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
     AA2_Laberinto_AlejandroPereira_VictorRafalesTheme {
         SensorScreen(x,y,z, modifier = Modifier)
-        ShowTime()
+        SimpleGame(modifier = Modifier)
     }
 }
 
