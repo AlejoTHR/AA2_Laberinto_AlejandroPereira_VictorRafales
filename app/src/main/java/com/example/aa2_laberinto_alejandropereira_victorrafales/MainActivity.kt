@@ -1,5 +1,6 @@
 package com.example.aa2_laberinto_alejandropereira_victorrafales
 
+import android.R.bool
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -10,11 +11,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -27,52 +26,65 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Canvas
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.aa2_laberinto_alejandropereira_victorrafales.ui.theme.AA2_Laberinto_AlejandroPereira_VictorRafalesTheme
 import kotlinx.coroutines.delay
+import java.util.Vector
+import kotlin.math.abs
+import kotlin.math.pow
 
 
+// SENSOR VARIAVLES
 private var x by mutableFloatStateOf(0f)
 private var y by mutableFloatStateOf(0f)
 private var z by mutableFloatStateOf(0f)
 
-private var r by mutableFloatStateOf(0f)
-private var p by mutableFloatStateOf(0f)
-private var yw by mutableFloatStateOf(0f)
-
-
 private lateinit var sensorManager: SensorManager
+
+
+// PARA LOS RECTANGULOS
+data class Rect(
+    var width: Int = 0,
+    var height: Int = 0,
+    var OffsetX: Int = 0,
+    var OffsetY: Int = 0
+)
+
+data class circle(
+    var OffsetX: Int = 0,
+    var OffsetY: Int = 0,
+    var Radius: Int = 0
+)
+
+var Player = circle(200,400,15)
+var Rectangle1 = Rect(100,100,100,100)
+
+// CANVAS VARIABLES
+private var MAX_X_SPEED = 8f
+private var MAX_Y_SPEED = 8f
+
 
 class MainActivity : ComponentActivity(), SensorEventListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        // SENSOR INITIALIZATION
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
 
         val Accsensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-
         if(Accsensor != null){
             sensorManager.registerListener(this, Accsensor, SensorManager.SENSOR_DELAY_NORMAL)
         }
-
-
 
         enableEdgeToEdge()
         setContent {
             AA2_Laberinto_AlejandroPereira_VictorRafalesTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
 
-                    SimpleGame(modifier = Modifier.padding(innerPadding))
+                    BallGamLogic(modifier = Modifier.padding(innerPadding))
                 }
             }
         }
@@ -81,11 +93,9 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     override fun onSensorChanged(event : SensorEvent) {
         x = event.values[0]
         y = event.values[1]
-        z = event.values[2]
+        z = event.values[2] // DONT NEED IT
 
     }
-
-
     override fun onAccuracyChanged(p0: Sensor?, p1: Int) {}
 
 }
@@ -115,72 +125,121 @@ fun ShowTime(){
 }
 
 
-@Composable
-fun SimpleGame(modifier: Modifier) {
-    var circleX by remember { mutableFloatStateOf(16f) }
-    var speedX by remember { mutableFloatStateOf(0f) }
 
-    var moveLeft by remember { mutableStateOf(false) }
-    var moveRight by remember { mutableStateOf(false) }
+
+
+@Composable
+fun BallGamLogic(modifier: Modifier) {
+
+    // CIRCLE VARIABLES
+    var circleX by remember { mutableFloatStateOf(200f) }
+    var circleY by remember { mutableFloatStateOf(400f) }
+    var speedX by remember { mutableFloatStateOf(1.5f) }
+    var speedY by remember { mutableFloatStateOf(1.5f) }
+    var circleRadius by remember { mutableFloatStateOf(15f) }
+    var canMove by remember { mutableStateOf(true) }
+
+    var RectX by remember { mutableFloatStateOf(100f) }
+    var RectY by remember { mutableFloatStateOf(100f) }
+    var RectWitdh by remember { mutableFloatStateOf(100f) }
+    var RectHeight by remember { mutableFloatStateOf(100f) }
+
+
+
+
+
+
 
     LaunchedEffect(Unit) {
-        delay(16)
-        speedX = 0f
-        if (moveLeft) {
-            speedX = -5f
-        }
-        if (moveRight) {
-            speedX = 5f
-        }
-        circleX += speedX
+        while (true) {
+//region NOT DIAGONALS
+//            speedX = 0f
+//            speedY = 0f
+//
+//
+//            if (x >= 5 && !movingYaxis) {
+//                movingXaxis = true
+//                speedX = -5f
+//
+//            } else {
+//                movingXaxis = false
+//            }
+//
+//            if (x <= -5 && !movingYaxis) {
+//                movingXaxis = true
+//                speedX = 5f
+//            } else {
+//                movingXaxis = false
+//            }
+//
+//            if (y >= 5 && !movingXaxis) {
+//                movingYaxis = true
+//                speedY = 5f
+//            } else {
+//                movingYaxis = false
+//            }
+//            if (y <= -5 && !movingXaxis) {
+//                movingYaxis = true
+//                speedY = -5f
+//            } else {
+//                movingYaxis = false
+//            }
+//
+//
+//            circleX += speedX
+//            circleY += speedY
+//endregion
 
-    }
+            delay(16)
 
-    Canvas(modifier = Modifier.fillMaxSize().pointerInput(Unit) {
-        detectTapGestures { offset ->
-            val w = size.width
-            moveRight = false
+            // BALL LOGIC
+            circleX -= x * speedX
+            circleY += y * speedY
 
-            moveLeft = false
+            // BALL COLLISION
 
-            if (offset.x < w / 3) {
-                moveLeft = true
 
-            } else if (offset.x > 2 * w / 3) {
-                moveRight = true
+            // BALL MOVEMENT
+            if(canMove) {
+                if (x <= -MAX_X_SPEED) {
+                    x = -MAX_X_SPEED
+                }
+                if (x >= MAX_X_SPEED) {
+                    x = MAX_X_SPEED
+                }
+                if (y <= -MAX_Y_SPEED) {
+                    y = -MAX_Y_SPEED
+                }
+                if (y >= MAX_Y_SPEED) {
+                    y = MAX_Y_SPEED
+                }
             }
 
+
+
+
         }
-
     }
 
-    ) {
-        drawCircle(
-            color = Color.Red, radius = 40f,
-            center = Offset(circleX, size.height)
-        )
-    }
+
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            // MAIN CIRCLE - PLAYER
+            drawCircle(
+                color = Color.Red, radius = Player.Radius.dp.toPx(),
+                center = Offset(Player.OffsetX.dp.toPx(), Player.OffsetY.dp.toPx())
+            )
+
+
+            drawRect(
+                color = Color.Magenta,
+                size = Size(Rectangle1.OffsetX.dp.toPx(), Rectangle1.OffsetY.dp.toPx()),
+                topLeft = Offset(Rectangle1.width.dp.toPx(),Rectangle1.height.dp.toPx())
+            )
+
+
+        }
 }
 
-
-@Composable
-fun CustomCanvas(){
-
-    Canvas(modifier = Modifier.size(width = 200.dp, height = 400.dp)){
-        drawRect(
-            color = Color.Blue,
-            size = Size(200.dp.toPx(), height = 100.dp.toPx())
-        )
-
-        drawCircle(
-            color = Color.Yellow,
-            radius = 250.dp.toPx(),
-            center = Offset(40.dp.toPx(), 200.dp.toPx())
-        )
-    }
-
-
-}
 
 
 @Preview(showBackground = true)
@@ -188,7 +247,7 @@ fun CustomCanvas(){
 fun GreetingPreview() {
     AA2_Laberinto_AlejandroPereira_VictorRafalesTheme {
         SensorScreen(x,y,z, modifier = Modifier)
-        SimpleGame(modifier = Modifier)
+        BallGamLogic(modifier = Modifier)
     }
 }
 
