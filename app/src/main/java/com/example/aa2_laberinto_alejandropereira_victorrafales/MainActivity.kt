@@ -6,6 +6,7 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Bundle
 import android.os.SystemClock
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -30,18 +31,12 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.aa2_laberinto_alejandropereira_victorrafales.Circle
 import com.example.aa2_laberinto_alejandropereira_victorrafales.ui.theme.AA2_Laberinto_AlejandroPereira_VictorRafalesTheme
 import kotlinx.coroutines.delay
 import kotlin.math.abs
+import kotlin.math.log
 import kotlin.math.pow
-
-
-// SENSOR VARIAVLES
-private var x by mutableFloatStateOf(0f)
-private var y by mutableFloatStateOf(0f)
-private var z by mutableFloatStateOf(0f)
-
-private lateinit var sensorManager: SensorManager
 
 
 // PARA LOS RECTANGULOS
@@ -58,18 +53,23 @@ data class Circle(
     var radius: Float = 0f
 )
 
-var Player = Circle(200f,400f,15f)
+
 
 // RECTANGLES FOR MAZE
-var Rectangle1 = Rect(100f,100f,100f,100f)
 
-
-// CANVAS VARIABLES
-private var MAX_X_SPEED = 8f
-private var MAX_Y_SPEED = 8f
+// SENSOR VARIABLES
+private var x by mutableFloatStateOf(0f)
+private var y by mutableFloatStateOf(0f)
+private var z by mutableFloatStateOf(0f)
+private var test_text by mutableStateOf("");
 
 
 class MainActivity : ComponentActivity(), SensorEventListener {
+
+    private lateinit var sensorManager: SensorManager
+
+    var player by mutableStateOf(Circle(100f,100f,15f))
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // SENSOR INITIALIZATION
@@ -85,7 +85,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             AA2_Laberinto_AlejandroPereira_VictorRafalesTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     SensorScreen(x,y,z, modifier = Modifier)
-                    BallGamLogic(modifier = Modifier.padding(innerPadding))
+                    BallGamLogic( player, modifier = Modifier.padding(innerPadding))
                 }
             }
         }
@@ -109,7 +109,7 @@ fun SensorScreen(x:Float , y: Float, z:Float, modifier: Modifier){
         TextField(value = x.toString(), onValueChange = {}, label = {Text("X")}, readOnly = true)
         TextField(value = y.toString(), onValueChange = {}, label = {Text("Y")}, readOnly = true)
         TextField(value = z.toString(), onValueChange = {}, label = {Text("Z")}, readOnly = true)
-
+        TextField(value= test_text, onValueChange = {}, label = {}, readOnly = true)
     }
 }
 
@@ -130,65 +130,67 @@ fun ShowTime(){
 }
 
 fun intersects (circle : Circle , rect : Rect) : Boolean{
+    Log.d("Intersect", "Circle [$circle] | Rectangle [$rect]")
+    
+    /*
+    if(circle.posX >= rect.posX && circle.posX <= rect.posX + rect.width &&
+        circle.posY >= rect.posY && circle.posY <= rect.posY + rect.height){
+        return true
+    }*/
+    val distX = abs(circle.posX - rect.posX - rect.width / 2);
+    val distY = abs(circle.posY - rect.posY-rect.height/2);
 
-    var circleDistance_X = abs(circle.posX - rect.posX);
-    var circleDistance_Y = abs(circle.posY - rect.posY);
+    if (distX > (rect.width/2 + circle.radius)) { return false; }
+    if (distY > (rect.height/2 + circle.radius)) { return false; }
 
-    if (circleDistance_X > (rect.width/2 + circle.radius)) { return false; }
-    if (circleDistance_Y > (rect.height/2 + circle.radius)) { return false; }
+    if (distX <= (rect.width/2)) { return true; }
+    if (distY <= (rect.height/2)) { return true; }
 
-    if (circleDistance_X <= (rect.width/2)) { return true; }
-    if (circleDistance_Y <= (rect.height/2)) { return true; }
-
-    var cornerDistance_sq = (circleDistance_X - rect.width/2).pow(2) +
-    (circleDistance_Y - rect.height/2).pow(2);
-
-    return (cornerDistance_sq <= (circle.radius.pow(2)));
+    val dx=distX-rect.width/2;
+    val dy=distY-rect.height/2;
+    return (dx*dx+dy*dy<=(circle.radius*circle.radius));
 }
 
 @Composable
-fun BallGamLogic(modifier: Modifier) {
-
-    var circleX by remember { mutableFloatStateOf(1.5f) }
-    var circleY by remember { mutableFloatStateOf(1.5f) }
-
+fun BallGamLogic(player : Circle, modifier: Modifier) {
     // CIRCLE VARIABLES
     var speedX by remember { mutableFloatStateOf(1.5f) }
     var speedY by remember { mutableFloatStateOf(1.5f) }
 
+    var Rectangle1 = Rect(100f,100f,100f,100f)
+
+
     LaunchedEffect(Unit) {
         while (true) {
-
             delay(16)
 
+            if(intersects(player, Rectangle1)){
+                test_text = "COLLISION " + x.toString() + ", " + y.toString()
+            }else{
+                test_text = "NO COLLISION" + x.toString() + ", " + y.toString()
+            }
             // BALL LOGIC
-
-            Player.posX -= x * speedX
-            Player.posY += y * speedY
-
-            circleX -= x * speedX
-            circleY += y * speedY
-
-
+            player.posX -= x * speedX
+            player.posY += y * speedY
         }
     }
 
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            // MAIN CIRCLE - PLAYER
-            drawCircle(
-                color = Color.Red, radius = Player.radius.dp.toPx(),
-                center = Offset(circleX.dp.toPx(), circleY.dp.toPx())
-            )
+    Canvas(modifier = Modifier.fillMaxSize()) {
+        // MAIN CIRCLE - PLAYER
+        drawCircle(
+            color = Color.Red, radius = player.radius.dp.toPx(),
+            center = Offset(player.posX.dp.toPx(), player.posY.dp.toPx())
+        )
 
 
-            drawRect(
-                color = Color.Magenta,
-                size = Size(Rectangle1.posX.dp.toPx(), Rectangle1.posY.dp.toPx()),
-                topLeft = Offset(Rectangle1.width.dp.toPx(),Rectangle1.height.dp.toPx())
-            )
+        drawRect(
+            color = Color.Magenta,
+            size = Size(Rectangle1.width.dp.toPx(), Rectangle1.height.dp.toPx()),
+            topLeft = Offset(Rectangle1.posX.dp.toPx(),Rectangle1.posY.dp.toPx())
+        )
 
 
-        }
+    }
     //region NOT DIAGONALS
 //            speedX = 0f
 //            speedY = 0f
@@ -234,9 +236,10 @@ fun BallGamLogic(modifier: Modifier) {
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
+    var player = Circle(100f,100f,15f);
     AA2_Laberinto_AlejandroPereira_VictorRafalesTheme {
-        SensorScreen(x,y,z, modifier = Modifier)
-        BallGamLogic(modifier = Modifier)
+        SensorScreen(0f,0f,0f, modifier = Modifier)
+        BallGamLogic(player, modifier = Modifier)
     }
 }
 
