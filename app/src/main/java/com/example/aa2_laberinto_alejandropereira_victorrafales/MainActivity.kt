@@ -201,18 +201,32 @@ fun BallGamLogic(player : Circle, modifier: Modifier) {
     var speedX by remember { mutableFloatStateOf(1.5f) }
     var speedY by remember { mutableFloatStateOf(1.5f) }
 
-    var Rectangle1 = Rect(100f,100f,100f,100f)
+    var EndGame = Rect(50f,50f,100f,100f)
+    var Rectangle1 = Rect(400f,50f,0f,150f)
+    var Rectangle2 = Rect(50f,400f,0f,200f)
+    var Rectangle3 = Rect(50f,400f,345f,200f)
+    var Rectangle4 = Rect(400f,50f,0f,600f)
 
 
     LaunchedEffect(Unit) {
         while (true) {
             delay(16)
 
-            if(intersects(player, Rectangle1)){
+            // DETEECTION END GAME
+            if(intersects(player, EndGame)) {
+                // indicar que la pantalla deve de cambiar a la victoria, pasando tambien la puntuacion
+            }
+            //DETECTION MAP
+            if(intersects(player, Rectangle1) &&
+                intersects(player, Rectangle2) &&
+                intersects(player, Rectangle3) &&
+                intersects(player, Rectangle4)
+            ){
                 test_text = "COLLISION " + x.toString() + ", " + y.toString()
             }else{
                 test_text = "NO COLLISION" + x.toString() + ", " + y.toString()
             }
+
             // BALL LOGIC
             player.posX -= x * speedX
             player.posY += y * speedY
@@ -225,12 +239,32 @@ fun BallGamLogic(player : Circle, modifier: Modifier) {
             color = Color.Red, radius = player.radius.dp.toPx(),
             center = Offset(player.posX.dp.toPx(), player.posY.dp.toPx())
         )
-
-
+        // RECTANGLE - END GAME
         drawRect(
             color = Color.Magenta,
+            size = Size(EndGame.width.dp.toPx(), EndGame.height.dp.toPx()),
+            topLeft = Offset(EndGame.posX.dp.toPx(),EndGame.posY.dp.toPx())
+        )
+        // RECTANGLES - MAP
+        drawRect(
+            color = Color.Black,
             size = Size(Rectangle1.width.dp.toPx(), Rectangle1.height.dp.toPx()),
             topLeft = Offset(Rectangle1.posX.dp.toPx(),Rectangle1.posY.dp.toPx())
+        )
+        drawRect(
+            color = Color.Black,
+            size = Size(Rectangle2.width.dp.toPx(), Rectangle2.height.dp.toPx()),
+            topLeft = Offset(Rectangle2.posX.dp.toPx(),Rectangle2.posY.dp.toPx())
+        )
+        drawRect(
+            color = Color.Black,
+            size = Size(Rectangle3.width.dp.toPx(), Rectangle3.height.dp.toPx()),
+            topLeft = Offset(Rectangle3.posX.dp.toPx(),Rectangle3.posY.dp.toPx())
+        )
+        drawRect(
+            color = Color.Black,
+            size = Size(Rectangle4.width.dp.toPx(), Rectangle4.height.dp.toPx()),
+            topLeft = Offset(Rectangle4.posX.dp.toPx(),Rectangle4.posY.dp.toPx())
         )
 
 
