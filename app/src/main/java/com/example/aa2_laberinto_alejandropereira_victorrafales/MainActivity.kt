@@ -82,6 +82,8 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
         enableEdgeToEdge()
         setContent {
+
+            
             AA2_Laberinto_AlejandroPereira_VictorRafalesTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     SensorScreen(x,y,z, modifier = Modifier)
