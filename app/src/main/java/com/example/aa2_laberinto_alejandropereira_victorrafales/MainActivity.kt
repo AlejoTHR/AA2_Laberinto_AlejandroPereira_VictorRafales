@@ -84,7 +84,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         setContent {
             AA2_Laberinto_AlejandroPereira_VictorRafalesTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-
+                    SensorScreen(x,y,z, modifier = Modifier)
                     BallGamLogic(modifier = Modifier.padding(innerPadding))
                 }
             }
@@ -156,12 +156,40 @@ fun BallGamLogic(modifier: Modifier) {
     var speedX by remember { mutableFloatStateOf(1.5f) }
     var speedY by remember { mutableFloatStateOf(1.5f) }
 
-    var canMove by remember { mutableStateOf(true) }
-
-
     LaunchedEffect(Unit) {
         while (true) {
-//region NOT DIAGONALS
+
+            delay(16)
+
+            // BALL LOGIC
+
+            Player.posX -= x * speedX
+            Player.posY += y * speedY
+
+            circleX -= x * speedX
+            circleY += y * speedY
+
+
+        }
+    }
+
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            // MAIN CIRCLE - PLAYER
+            drawCircle(
+                color = Color.Red, radius = Player.radius.dp.toPx(),
+                center = Offset(circleX.dp.toPx(), circleY.dp.toPx())
+            )
+
+
+            drawRect(
+                color = Color.Magenta,
+                size = Size(Rectangle1.posX.dp.toPx(), Rectangle1.posY.dp.toPx()),
+                topLeft = Offset(Rectangle1.width.dp.toPx(),Rectangle1.height.dp.toPx())
+            )
+
+
+        }
+    //region NOT DIAGONALS
 //            speedX = 0f
 //            speedY = 0f
 //
@@ -199,52 +227,6 @@ fun BallGamLogic(modifier: Modifier) {
 //            circleY += speedY
 //endregion
 
-            delay(16)
-
-            circleX = Player.posX
-            circleY = Player.posY
-
-            // BALL LOGIC
-            circleX -= x * speedX
-            circleY += y * speedY
-
-            /*
-            if (x <= -MAX_X_SPEED) {
-                x = -MAX_X_SPEED
-            }
-            if (x >= MAX_X_SPEED) {
-                x = MAX_X_SPEED
-            }
-            if (y <= -MAX_Y_SPEED) {
-                y = -MAX_Y_SPEED
-            }
-            if (y >= MAX_Y_SPEED) {
-                y = MAX_Y_SPEED
-            }
-*/
-            Player.posX = circleX
-            Player.posY = circleY
-
-        }
-    }
-
-
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            // MAIN CIRCLE - PLAYER
-            drawCircle(
-                color = Color.Red, radius = Player.radius.dp.toPx(),
-                center = Offset(Player.posX.dp.toPx(), Player.posY.dp.toPx())
-            )
-
-
-            drawRect(
-                color = Color.Magenta,
-                size = Size(Rectangle1.posX.dp.toPx(), Rectangle1.posY.dp.toPx()),
-                topLeft = Offset(Rectangle1.width.dp.toPx(),Rectangle1.height.dp.toPx())
-            )
-
-
-        }
 }
 
 
