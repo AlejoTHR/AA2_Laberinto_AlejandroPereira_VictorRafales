@@ -11,9 +11,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -25,12 +27,16 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.example.aa2_laberinto_alejandropereira_victorrafales.Circle
 import com.example.aa2_laberinto_alejandropereira_victorrafales.ui.theme.AA2_Laberinto_AlejandroPereira_VictorRafalesTheme
 import kotlinx.coroutines.delay
@@ -83,9 +89,21 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         enableEdgeToEdge()
         setContent {
             AA2_Laberinto_AlejandroPereira_VictorRafalesTheme {
+                val navController = rememberNavController()
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     SensorScreen(x,y,z, modifier = Modifier)
                     BallGamLogic( player, modifier = Modifier.padding(innerPadding))
+                    NavHost(
+                        navController, "home",
+                        modifier = Modifier.padding(innerPadding)
+                    ) {
+                        composable("home") {
+                            TitleScreen(onBtnClick = { navController.navigate("secondary")})
+                        }
+                        composable("secondary") {
+                            GameScreen(onBtnClick = { navController.popBackStack()})
+                        }
+                    }
                 }
             }
         }
@@ -101,7 +119,31 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
 }
 
+@Composable
+fun TitleScreen(
+    modifier: Modifier = Modifier,
+    onBtnClick: () -> Unit
+) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    }
+    Button(onClick = onBtnClick)
+    {
 
+    }
+}
+
+@Composable
+fun GameScreen(
+    modifier: Modifier = Modifier,
+    onBtnClick: () -> Unit
+) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    }
+    Button(onClick = onBtnClick)
+    {
+
+    }
+}
 
 @Composable
 fun SensorScreen(x:Float , y: Float, z:Float, modifier: Modifier){
