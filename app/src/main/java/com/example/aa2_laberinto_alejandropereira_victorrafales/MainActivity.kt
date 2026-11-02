@@ -12,6 +12,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -74,7 +75,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
     private lateinit var sensorManager: SensorManager
 
-    var player by mutableStateOf(Circle(100f,100f,15f))
+    var player by mutableStateOf(Circle(70f,250f,10f))
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -150,10 +151,11 @@ fun GameScreen(
 @Composable
 fun SensorScreen(x:Float , y: Float, z:Float, modifier: Modifier){
     Column(modifier = Modifier.padding(16.dp)) {
-        TextField(value = x.toString(), onValueChange = {}, label = {Text("X")}, readOnly = true)
-        TextField(value = y.toString(), onValueChange = {}, label = {Text("Y")}, readOnly = true)
-        TextField(value = z.toString(), onValueChange = {}, label = {Text("Z")}, readOnly = true)
-        TextField(value= test_text, onValueChange = {}, label = {}, readOnly = true)
+        //TextField(value = x.toString(), onValueChange = {}, label = {Text("X")}, readOnly = true)
+        //TextField(value = y.toString(), onValueChange = {}, label = {Text("Y")}, readOnly = true)
+        //TextField(value = z.toString(), onValueChange = {}, label = {Text("Z")}, readOnly = true)
+        //TextField(value= test_text, onValueChange = {}, label = {}, readOnly = true)
+        ShowTime()
     }
 }
 
@@ -201,74 +203,232 @@ fun BallGamLogic(player : Circle, modifier: Modifier) {
     var speedX by remember { mutableFloatStateOf(1.5f) }
     var speedY by remember { mutableFloatStateOf(1.5f) }
 
-    var EndGame = Rect(50f,50f,100f,100f)
-    var Rectangle1 = Rect(400f,50f,0f,150f)
-    var Rectangle2 = Rect(50f,400f,0f,200f)
-    var Rectangle3 = Rect(50f,400f,345f,200f)
-    var Rectangle4 = Rect(400f,50f,0f,600f)
+    var gameEnd = false;
 
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
 
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(16)
+        // SCREEN DIMENSIONS
+        val screenWidth = maxWidth.value
 
-            // DETEECTION END GAME
-            if(intersects(player, EndGame)) {
-                // indicar que la pantalla deve de cambiar a la victoria, pasando tambien la puntuacion
+        // END GAME DIMENSIONS
+        val endGame = Rect(40f, 40f, 40f, 140f)
+
+        // MAP DIMENSIONS LIMITS
+        val rectangleTop = Rect(screenWidth, endGame.height, 0f, 100f)
+        val rectangleDown = Rect(screenWidth, endGame.height, 0f, 500f)
+        val rectangleLeft = Rect(endGame.width, rectangleDown.posY + endGame.height - rectangleTop.posY, 0f, rectangleTop.posY)
+        val rectangleRight = Rect(endGame.width, rectangleDown.posY + endGame.height - rectangleTop.posY, screenWidth - rectangleLeft.width, rectangleTop.posY)
+        // MAP DIMENSIONS INSIDE
+        val rectangle1 = Rect(endGame.width*2f, endGame.height, endGame.posX, endGame.posY+endGame.height)
+        val rectangle2 = Rect(endGame.width, endGame.height*(3f), endGame.posX+endGame.width*2f, endGame.posY+endGame.height)
+        val rectangle3 = Rect(endGame.width, endGame.height, endGame.posX+endGame.width*3f, endGame.posY+endGame.height*2f)
+        val rectangle4 = Rect(endGame.width, endGame.height, endGame.posX+endGame.width*4f, endGame.posY)
+        val rectangle5 = Rect(screenWidth, endGame.height, endGame.posX+endGame.width*6f, endGame.posY+endGame.height*1f)
+        val rectangle6 = Rect(endGame.width, rectangleDown.posY - (endGame.posY+endGame.height*6), endGame.posX+endGame.width*5f, endGame.posY+endGame.height*6)
+        val rectangle7 = Rect(endGame.width, endGame.height*3f, endGame.posX+endGame.width*3f, endGame.posY+endGame.height*4)
+        val rectangle8 = Rect(endGame.width*5f, endGame.height, endGame.posX+endGame.width, endGame.posY+endGame.height*4)
+        val rectangle9 = Rect(screenWidth, endGame.height, endGame.posX+endGame.width*7f, endGame.posY+endGame.height*4)
+        val rectangle10 = Rect(rectangle6.posX - (endGame.posX+endGame.width*3f), endGame.height, endGame.posX, rectangleDown.posY-endGame.height*2f)
+        val rectangle11 = Rect(endGame.width, endGame.height, endGame.posX+endGame.width*3f, rectangleDown.posY-endGame.height)
+        val rectangle12 = Rect(endGame.width, endGame.height, endGame.posX+endGame.width, rectangleDown.posY-endGame.height*3f)
+        val rectangle13 = Rect(endGame.width*2f, endGame.height, endGame.posX+endGame.width*5f, endGame.posY+endGame.height*2f)
+
+        LaunchedEffect(Unit) {
+            while (!gameEnd) {
+                delay(16)
+
+                // DETEECTION END GAME
+                if (intersects(player, endGame)) {
+                    gameEnd = true
+                    delay(300)
+
+                    // Acción: Cambiar de pantalla y pasar puntuación
+                    //navegarAPantallaVictoria(player.puntuacion)
+                }
+
+                val nextX = -x * speedX
+                val nextY = y * speedY
+
+                player.posX += nextX
+                player.posY += nextY
+
+                //DETECTION MAP HORIZONTAL
+                if (intersects(player, rectangleTop) ||
+                    intersects(player, rectangleLeft) ||
+                    intersects(player, rectangleRight) ||
+                    intersects(player, rectangleDown) ||
+                    intersects(player, rectangle1) ||
+                    intersects(player, rectangle2) ||
+                    intersects(player, rectangle3) ||
+                    intersects(player, rectangle4) ||
+                    intersects(player, rectangle5) ||
+                    intersects(player, rectangle6) ||
+                    intersects(player, rectangle7) ||
+                    intersects(player, rectangle8) ||
+                    intersects(player, rectangle9) ||
+                    intersects(player, rectangle10) ||
+                    intersects(player, rectangle11) ||
+                    intersects(player, rectangle12) ||
+                    intersects(player, rectangle13)
+                ) {
+                    //test_text = "COLLISION " + x.toString() + ", " + y.toString()
+                    player.posX -= nextX
+                } else {
+                    //test_text = "NO COLLISION" + x.toString() + ", " + y.toString()
+                }
+
+                //DETECTION MAP VERTICAL
+                if (intersects(player, rectangleTop) ||
+                    intersects(player, rectangleLeft) ||
+                    intersects(player, rectangleRight) ||
+                    intersects(player, rectangleDown) ||
+                    intersects(player, rectangle1) ||
+                    intersects(player, rectangle2) ||
+                    intersects(player, rectangle3) ||
+                    intersects(player, rectangle4) ||
+                    intersects(player, rectangle5) ||
+                    intersects(player, rectangle6) ||
+                    intersects(player, rectangle7) ||
+                    intersects(player, rectangle8) ||
+                    intersects(player, rectangle9) ||
+                    intersects(player, rectangle10) ||
+                    intersects(player, rectangle11) ||
+                    intersects(player, rectangle12) ||
+                    intersects(player, rectangle13)
+                ) {
+                    //test_text = "COLLISION " + x.toString() + ", " + y.toString()
+                    player.posY -= nextY
+
+                } else {
+                    //test_text = "NO COLLISION" + x.toString() + ", " + y.toString()
+                }
+
+                // BALL LOGIC
+//                player.posX -= x * speedX
+//                player.posY += y * speedY
             }
-            //DETECTION MAP
-            if(intersects(player, Rectangle1) &&
-                intersects(player, Rectangle2) &&
-                intersects(player, Rectangle3) &&
-                intersects(player, Rectangle4)
-            ){
-                test_text = "COLLISION " + x.toString() + ", " + y.toString()
-            }else{
-                test_text = "NO COLLISION" + x.toString() + ", " + y.toString()
-            }
+        }
 
-            // BALL LOGIC
-            player.posX -= x * speedX
-            player.posY += y * speedY
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            // MAIN CIRCLE - PLAYER
+            drawCircle(
+                color = Color.Red, radius = player.radius.dp.toPx(),
+                center = Offset(player.posX.dp.toPx(),  player.posY.dp.toPx())
+            )
+            // RECTANGLE - END GAME
+            drawRect(
+                color = Color.Magenta,
+                size = Size(endGame.width.dp.toPx(), endGame.height.dp.toPx()),
+                topLeft = Offset(endGame.posX.dp.toPx(), endGame.posY.dp.toPx())
+            )
+            // RECTANGLES - MAP LIMITS
+            // RECTANGLE TOP
+            drawRect(
+                color = Color.Black,
+                size = Size(rectangleTop.width.dp.toPx(),rectangleTop.height.dp.toPx()),
+                topLeft = Offset(rectangleTop.posX.dp.toPx(),rectangleTop.posY.dp.toPx())
+            )
+            // RECTANGLE DOWN
+            drawRect(
+                color = Color.Black,
+                size = Size(rectangleDown.width.dp.toPx(), rectangleDown.height.dp.toPx()),
+                topLeft = Offset(rectangleDown.posX.dp.toPx(), rectangleDown.posY.dp.toPx())
+            )
+            // RECTANGLE LEFT
+            drawRect(
+                color = Color.Black,
+                size = Size(rectangleLeft.width.dp.toPx(),rectangleLeft.height.dp.toPx()),
+                topLeft = Offset(rectangleLeft.posX.dp.toPx(),rectangleLeft.posY.dp.toPx())
+            )
+            // RECTANGLE RIGHT
+            drawRect(
+                color = Color.Black,
+                size = Size(rectangleRight.width.dp.toPx(),rectangleRight.height.dp.toPx()),
+                topLeft = Offset(rectangleRight.posX.dp.toPx(), rectangleRight.posY.dp.toPx())
+            )
+
+            // RECTANGLES - MAP INSIDE
+            // RECTANGLE 1
+            drawRect(
+                color = Color.Black,
+                size = Size(rectangle1.width.dp.toPx(),rectangle1.height.dp.toPx()),
+                topLeft = Offset(rectangle1.posX.dp.toPx(),rectangle1.posY.dp.toPx())
+            )
+            // RECTANGLE 2
+            drawRect(
+                color = Color.Black,
+                size = Size(rectangle2.width.dp.toPx(), rectangle2.height.dp.toPx()),
+                topLeft = Offset(rectangle2.posX.dp.toPx(), rectangle2.posY.dp.toPx())
+            )
+            // RECTANGLE 3
+            drawRect(
+                color = Color.Black,
+                size = Size(rectangle3.width.dp.toPx(),rectangle3.height.dp.toPx()),
+                topLeft = Offset(rectangle3.posX.dp.toPx(),rectangle3.posY.dp.toPx())
+            )
+            // RECTANGLE 4
+            drawRect(
+                color = Color.Black,
+                size = Size(rectangle4.width.dp.toPx(),rectangle4.height.dp.toPx()),
+                topLeft = Offset(rectangle4.posX.dp.toPx(), rectangle4.posY.dp.toPx())
+            )
+            // RECTANGLE 5
+            drawRect(
+                color = Color.Black,
+                size = Size(rectangle5.width.dp.toPx(),rectangle5.height.dp.toPx()),
+                topLeft = Offset(rectangle5.posX.dp.toPx(), rectangle5.posY.dp.toPx())
+            )
+            // RECTANGLE 6
+            drawRect(
+                color = Color.Black,
+                size = Size(rectangle6.width.dp.toPx(),rectangle6.height.dp.toPx()),
+                topLeft = Offset(rectangle6.posX.dp.toPx(), rectangle6.posY.dp.toPx())
+            )
+            // RECTANGLE 7
+            drawRect(
+                color = Color.Black,
+                size = Size(rectangle7.width.dp.toPx(),rectangle7.height.dp.toPx()),
+                topLeft = Offset(rectangle7.posX.dp.toPx(), rectangle7.posY.dp.toPx())
+            )
+            // RECTANGLE 8
+            drawRect(
+                color = Color.Black,
+                size = Size(rectangle8.width.dp.toPx(),rectangle8.height.dp.toPx()),
+                topLeft = Offset(rectangle8.posX.dp.toPx(), rectangle8.posY.dp.toPx())
+            )
+            // RECTANGLE 9
+            drawRect(
+                color = Color.Black,
+                size = Size(rectangle9.width.dp.toPx(),rectangle9.height.dp.toPx()),
+                topLeft = Offset(rectangle9.posX.dp.toPx(), rectangle9.posY.dp.toPx())
+            )
+            // RECTANGLE 10
+            drawRect(
+                color = Color.Black,
+                size = Size(rectangle10.width.dp.toPx(),rectangle10.height.dp.toPx()),
+                topLeft = Offset(rectangle10.posX.dp.toPx(), rectangle10.posY.dp.toPx())
+            )
+            // RECTANGLE 11
+            drawRect(
+                color = Color.Black,
+                size = Size(rectangle11.width.dp.toPx(),rectangle11.height.dp.toPx()),
+                topLeft = Offset(rectangle11.posX.dp.toPx(), rectangle11.posY.dp.toPx())
+            )
+            // RECTANGLE 12
+            drawRect(
+                color = Color.Black,
+                size = Size(rectangle12.width.dp.toPx(),rectangle12.height.dp.toPx()),
+                topLeft = Offset(rectangle12.posX.dp.toPx(), rectangle12.posY.dp.toPx())
+            )
+            // RECTANGLE 13
+            drawRect(
+                color = Color.Black,
+                size = Size(rectangle13.width.dp.toPx(),rectangle13.height.dp.toPx()),
+                topLeft = Offset(rectangle13.posX.dp.toPx(), rectangle13.posY.dp.toPx())
+            )
         }
     }
 
-    Canvas(modifier = Modifier.fillMaxSize()) {
-        // MAIN CIRCLE - PLAYER
-        drawCircle(
-            color = Color.Red, radius = player.radius.dp.toPx(),
-            center = Offset(player.posX.dp.toPx(), player.posY.dp.toPx())
-        )
-        // RECTANGLE - END GAME
-        drawRect(
-            color = Color.Magenta,
-            size = Size(EndGame.width.dp.toPx(), EndGame.height.dp.toPx()),
-            topLeft = Offset(EndGame.posX.dp.toPx(),EndGame.posY.dp.toPx())
-        )
-        // RECTANGLES - MAP
-        drawRect(
-            color = Color.Black,
-            size = Size(Rectangle1.width.dp.toPx(), Rectangle1.height.dp.toPx()),
-            topLeft = Offset(Rectangle1.posX.dp.toPx(),Rectangle1.posY.dp.toPx())
-        )
-        drawRect(
-            color = Color.Black,
-            size = Size(Rectangle2.width.dp.toPx(), Rectangle2.height.dp.toPx()),
-            topLeft = Offset(Rectangle2.posX.dp.toPx(),Rectangle2.posY.dp.toPx())
-        )
-        drawRect(
-            color = Color.Black,
-            size = Size(Rectangle3.width.dp.toPx(), Rectangle3.height.dp.toPx()),
-            topLeft = Offset(Rectangle3.posX.dp.toPx(),Rectangle3.posY.dp.toPx())
-        )
-        drawRect(
-            color = Color.Black,
-            size = Size(Rectangle4.width.dp.toPx(), Rectangle4.height.dp.toPx()),
-            topLeft = Offset(Rectangle4.posX.dp.toPx(),Rectangle4.posY.dp.toPx())
-        )
-
-
-    }
     //region NOT DIAGONALS
 //            speedX = 0f
 //            speedY = 0f
