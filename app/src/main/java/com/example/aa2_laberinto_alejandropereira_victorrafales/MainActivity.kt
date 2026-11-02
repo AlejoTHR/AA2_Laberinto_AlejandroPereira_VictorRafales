@@ -60,8 +60,6 @@ data class Circle(
     var radius: Float = 0f
 )
 
-
-
 // RECTANGLES FOR MAZE
 
 // SENSOR VARIABLES
@@ -76,7 +74,10 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     private lateinit var sensorManager: SensorManager
 
     var player by mutableStateOf(Circle(70f,250f,10f))
+    val initPositionX = player.posX
+    val initPositionY = player.posY
 
+    // SENSOR MANAGER
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // SENSOR INITIALIZATION
@@ -93,18 +94,24 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             
             AA2_Laberinto_AlejandroPereira_VictorRafalesTheme {
                 val navController = rememberNavController()
+
+
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    SensorScreen(x,y,z, modifier = Modifier)
-                    BallGamLogic( player, modifier = Modifier.padding(innerPadding))
+
+
                     NavHost(
                         navController, "home",
                         modifier = Modifier.padding(innerPadding)
                     ) {
                         composable("home") {
                             TitleScreen(onBtnClick = { navController.navigate("secondary")})
+
                         }
                         composable("secondary") {
                             GameScreen(onBtnClick = { navController.popBackStack()})
+
+                            SensorScreen(x,y,z, modifier = Modifier)
+                            BallGamLogic( player, modifier = Modifier.padding(innerPadding), initPositionX, initPositionY)
                         }
                     }
                 }
@@ -128,12 +135,15 @@ fun TitleScreen(
     onBtnClick: () -> Unit
 ) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+
     }
     Button(onClick = onBtnClick)
     {
-
+        Text("TITLE SCREEN")
     }
 }
+
+
 
 @Composable
 fun GameScreen(
@@ -148,6 +158,8 @@ fun GameScreen(
     }
 }
 
+
+//DEBUG SENSOR
 @Composable
 fun SensorScreen(x:Float , y: Float, z:Float, modifier: Modifier){
     Column(modifier = Modifier.padding(16.dp)) {
@@ -160,6 +172,7 @@ fun SensorScreen(x:Float , y: Float, z:Float, modifier: Modifier){
 }
 
 
+// SHOW ELAPSED TIME
 @Composable
 fun ShowTime(){
     val starTime = remember { SystemClock.elapsedRealtime() }
@@ -168,13 +181,16 @@ fun ShowTime(){
     LaunchedEffect(Unit) {
         while (true){
             delay(100)
-            elapsed = SystemClock.elapsedRealtime()-starTime
+            elapsed = SystemClock.elapsedRealtime()+starTime
         }
     }
+
     Text("Tiempo: ${elapsed}")
 
 }
 
+
+// COLLISIONS
 fun intersects (circle : Circle , rect : Rect) : Boolean{
     Log.d("Intersect", "Circle [$circle] | Rectangle [$rect]")
     
@@ -197,9 +213,14 @@ fun intersects (circle : Circle , rect : Rect) : Boolean{
     return (dx*dx+dy*dy<=(circle.radius*circle.radius));
 }
 
+
+// BALL n COLLISIONS
 @Composable
-fun BallGamLogic(player : Circle, modifier: Modifier) {
+fun BallGamLogic(player : Circle, modifier: Modifier, initPositionX : Float, initPositionY : Float) {
     // CIRCLE VARIABLES
+     player.posX = initPositionX
+     player.posY = initPositionY
+
     var speedX by remember { mutableFloatStateOf(1.5f) }
     var speedY by remember { mutableFloatStateOf(1.5f) }
 
@@ -469,15 +490,13 @@ fun BallGamLogic(player : Circle, modifier: Modifier) {
 
 }
 
-
-
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
     var player = Circle(100f,100f,15f);
     AA2_Laberinto_AlejandroPereira_VictorRafalesTheme {
         SensorScreen(0f,0f,0f, modifier = Modifier)
-        BallGamLogic(player, modifier = Modifier)
+        BallGamLogic(player, modifier = Modifier, initPositionX = player.posX, initPositionY = player.posY,)
     }
 }
 
