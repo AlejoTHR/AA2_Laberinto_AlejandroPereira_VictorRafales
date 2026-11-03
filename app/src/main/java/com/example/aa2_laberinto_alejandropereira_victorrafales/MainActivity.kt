@@ -11,19 +11,23 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,17 +37,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.aa2_laberinto_alejandropereira_victorrafales.Circle
 import com.example.aa2_laberinto_alejandropereira_victorrafales.ui.theme.AA2_Laberinto_AlejandroPereira_VictorRafalesTheme
 import kotlinx.coroutines.delay
 import kotlin.math.abs
-import kotlin.math.log
-import kotlin.math.pow
+
 
 
 // PARA LOS RECTANGULOS
@@ -66,7 +71,7 @@ data class Circle(
 private var x by mutableFloatStateOf(0f)
 private var y by mutableFloatStateOf(0f)
 private var z by mutableFloatStateOf(0f)
-private var test_text by mutableStateOf("");
+private var test_text by mutableStateOf("")
 
 
 class MainActivity : ComponentActivity(), SensorEventListener {
@@ -77,15 +82,18 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     val initPositionX = player.posX
     val initPositionY = player.posY
 
+    // CONDITIONS
+    var timeFinished by mutableStateOf(2)
+    var isPaused by mutableStateOf(false)
+    
     // SENSOR MANAGER
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // SENSOR INITIALIZATION
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
-
-        val Accsensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-        if(Accsensor != null){
-            sensorManager.registerListener(this, Accsensor, SensorManager.SENSOR_DELAY_NORMAL)
+        val accsensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        if(accsensor != null){
+            sensorManager.registerListener(this, accsensor, SensorManager.SENSOR_DELAY_NORMAL)
         }
 
         enableEdgeToEdge()
@@ -108,11 +116,15 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
                         }
                         composable("secondary") {
-                            GameScreen(onBtnClick = { navController.popBackStack()})
+                            GameScreen(onBtnClick = { navController.navigate("WinScreen")})
 
-                            SensorScreen(x,y,z, modifier = Modifier)
-                            BallGamLogic( player, modifier = Modifier.padding(innerPadding), initPositionX, initPositionY)
+                            ShowTime()
+                            BallGamLogic( player, modifier = Modifier.padding(innerPadding), initPositionX, initPositionY, WinCondition = { navController.navigate("WinScreen")})
                         }
+                        composable("WinScreen") {
+                            WinScreen({navController.popBackStack()}, {/*FUN CREATED BELLOW*/ goHome(navController)})
+                        }
+
                     }
                 }
             }
@@ -129,35 +141,117 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
 }
 
+
 @Composable
 fun TitleScreen(
     modifier: Modifier = Modifier,
     onBtnClick: () -> Unit
 ) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Column(Modifier.fillMaxSize()) {
+
+        Box(Modifier.fillMaxSize().weight(0.7f), contentAlignment = Alignment.Center){
+            Image(
+                painter = painterResource(R.drawable.ballmaze),
+                contentDescription = "Logo",
+            )
+        }
+        Box(Modifier.fillMaxSize().weight(0.2f), contentAlignment = Alignment.Center){
+            Text(
+                text = "Ball Maze App",
+                fontSize = 36.sp,
+            )
+        }
+        Box(Modifier.fillMaxSize().weight(0.1f), contentAlignment = Alignment.Center) {
+            Button(onClick = onBtnClick, Modifier.width(200.dp).height(150.dp))
+            {
+                Text(
+                    text = "PLAY",
+                    fontSize = 36.sp,
+                )
+            }
+        }
 
     }
-    Button(onClick = onBtnClick)
-    {
-        Text("TITLE SCREEN")
-    }
+
+
 }
-
-
 
 @Composable
 fun GameScreen(
     modifier: Modifier = Modifier,
     onBtnClick: () -> Unit
 ) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopEnd) {
+        Button(onClick = onBtnClick) {
+            Text("Exit")
+        }
     }
-    Button(onClick = onBtnClick)
-    {
 
+
+}
+
+// GO HOME FROM WINSCREEN
+fun goHome(navController: NavController){
+    navController.navigate("home"){
+        popUpTo("home") {
+            inclusive = false
+        }
+        launchSingleTop = true }
+}
+@Composable
+fun WinScreen(playAgainBtn:()-> Unit, titleBtn:()->Unit){
+    Column(Modifier.fillMaxSize()) {
+        Box(Modifier.fillMaxSize().weight(0.7f), contentAlignment = Alignment.Center){
+            Image(
+                painter = painterResource(R.drawable.win),
+                contentDescription = "Logo",
+            )
+        }
+        Box(Modifier.fillMaxSize().weight(0.2f), contentAlignment = Alignment.Center){
+            Text(
+                text = "YOU WIN",
+                fontSize = 36.sp,
+            )
+        }
+        Box(Modifier.fillMaxSize().weight(0.1f), contentAlignment = Alignment.Center) {
+            Button(onClick = playAgainBtn, Modifier.width(200.dp).height(150.dp))
+            {
+                Text(
+                    text = "PLAY AGAIN",
+                    fontSize = 26.sp,
+                )
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        Box(Modifier.fillMaxSize().weight(0.1f), contentAlignment = Alignment.Center) {
+            Button(onClick = titleBtn, Modifier.width(200.dp).height(150.dp))
+            {
+                Text(
+                    text = "GO BACK",
+                    fontSize = 36.sp,
+                )
+            }
+        }
+
+    }
+
+}
+
+@Preview(showBackground = true)
+@Composable
+fun TittleScreenPreview() {
+    AA2_Laberinto_AlejandroPereira_VictorRafalesTheme {
+        TitleScreen { }
     }
 }
 
+@Preview(showBackground = true)
+@Composable
+fun WinScreenPreview() {
+    AA2_Laberinto_AlejandroPereira_VictorRafalesTheme {
+        WinScreen({}, {} )
+    }
+}
 
 //DEBUG SENSOR
 @Composable
@@ -175,17 +269,49 @@ fun SensorScreen(x:Float , y: Float, z:Float, modifier: Modifier){
 // SHOW ELAPSED TIME
 @Composable
 fun ShowTime(){
+    // INITIAL TIME
+    val seconds = 60
+    val minutes = 2
+
+    // SET COUNT DOWN VARS
     val starTime = remember { SystemClock.elapsedRealtime() }
-    var elapsed by remember { mutableLongStateOf(0L) }
+    var elapsedMls by remember { mutableLongStateOf(0L) }
+    var elapsedScnds by remember { mutableIntStateOf(seconds) }
+    var elapsedMnts by remember { mutableIntStateOf(minutes) }
 
     LaunchedEffect(Unit) {
         while (true){
             delay(100)
-            elapsed = SystemClock.elapsedRealtime()+starTime
+
+            // SUBSTRACT SECONDS
+            if(elapsedMls < 99) elapsedMls = SystemClock.elapsedRealtime()-starTime
+            else {
+                elapsedMls = 0
+                elapsedScnds--
+            }
+            // SUBSTACT MINUTES
+            if(elapsedScnds == 0){
+                elapsedScnds = 59
+                elapsedMnts--
+            }
+            // WHEN TIMERS OUT
+            if(elapsedMnts < 0){
+                elapsedMnts = 0
+                elapsedScnds = 0
+                elapsedScnds = 0
+                elapsedMls = 0
+            }
+
         }
+
+    }
+    if(elapsedScnds <= 9){
+        Text("Time: 0$elapsedMnts : 0$elapsedScnds")
+    }
+    else if(elapsedScnds >= 10){
+        Text("Time: 0$elapsedMnts : $elapsedScnds")
     }
 
-    Text("Tiempo: ${elapsed}")
 
 }
 
@@ -199,8 +325,8 @@ fun intersects (circle : Circle , rect : Rect) : Boolean{
         circle.posY >= rect.posY && circle.posY <= rect.posY + rect.height){
         return true
     }*/
-    val distX = abs(circle.posX - rect.posX - rect.width / 2);
-    val distY = abs(circle.posY - rect.posY-rect.height/2);
+    val distX = abs(circle.posX - rect.posX - rect.width / 2)
+    val distY = abs(circle.posY - rect.posY-rect.height/2)
 
     if (distX > (rect.width/2 + circle.radius)) { return false; }
     if (distY > (rect.height/2 + circle.radius)) { return false; }
@@ -208,15 +334,15 @@ fun intersects (circle : Circle , rect : Rect) : Boolean{
     if (distX <= (rect.width/2)) { return true; }
     if (distY <= (rect.height/2)) { return true; }
 
-    val dx=distX-rect.width/2;
-    val dy=distY-rect.height/2;
-    return (dx*dx+dy*dy<=(circle.radius*circle.radius));
+    val dx=distX-rect.width/2
+    val dy=distY-rect.height/2
+    return (dx*dx+dy*dy<=(circle.radius*circle.radius))
 }
 
 
 // BALL n COLLISIONS
 @Composable
-fun BallGamLogic(player : Circle, modifier: Modifier, initPositionX : Float, initPositionY : Float) {
+fun BallGamLogic(player : Circle, modifier: Modifier, initPositionX : Float, initPositionY : Float, WinCondition : () -> Unit) {
     // CIRCLE VARIABLES
      player.posX = initPositionX
      player.posY = initPositionY
@@ -224,7 +350,7 @@ fun BallGamLogic(player : Circle, modifier: Modifier, initPositionX : Float, ini
     var speedX by remember { mutableFloatStateOf(1.5f) }
     var speedY by remember { mutableFloatStateOf(1.5f) }
 
-    var gameEnd = false;
+    var gameEnd = false
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
 
@@ -323,6 +449,13 @@ fun BallGamLogic(player : Circle, modifier: Modifier, initPositionX : Float, ini
                 } else {
                     //test_text = "NO COLLISION" + x.toString() + ", " + y.toString()
                 }
+
+
+                // DETECTION FOR WIN RECT
+                if(intersects(player, endGame)){
+                    WinCondition()
+                }
+
 
                 // BALL LOGIC
 //                player.posX -= x * speedX
@@ -493,10 +626,11 @@ fun BallGamLogic(player : Circle, modifier: Modifier, initPositionX : Float, ini
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
-    var player = Circle(100f,100f,15f);
+    val player = Circle(100f,100f,15f)
     AA2_Laberinto_AlejandroPereira_VictorRafalesTheme {
         SensorScreen(0f,0f,0f, modifier = Modifier)
-        BallGamLogic(player, modifier = Modifier, initPositionX = player.posX, initPositionY = player.posY,)
+        BallGamLogic(player, modifier = Modifier, initPositionX = player.posX, initPositionY = player.posY, WinCondition = {})
+        TitleScreen { }
     }
 }
 
