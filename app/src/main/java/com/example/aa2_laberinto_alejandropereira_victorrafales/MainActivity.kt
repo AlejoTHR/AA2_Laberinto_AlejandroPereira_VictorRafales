@@ -6,6 +6,7 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Bundle
 import android.os.SystemClock
+import android.text.BoringLayout
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -83,7 +84,6 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
 
 
-
     // SENSOR MANAGER
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -112,10 +112,10 @@ class MainActivity : ComponentActivity(), SensorEventListener {
                         }
                         composable("secondary") {
 
-                            GameScreen(Modifier, { }, {navController.navigate("LoseScreen")},
+                            GameScreen(Modifier, { goHome(navController)}, {navController.navigate("LoseScreen")},
 
                                 // BALL GAME LOGIC fun
-                                player, initPositionX, initPositionY, WinCondition = { navController.navigate("WinScreen")})
+                                player, initPositionX, initPositionY, WinCondition = { navController.navigate("WinScreen")},)
 
                         }
                         composable("WinScreen") {
@@ -140,7 +140,6 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     override fun onAccuracyChanged(p0: Sensor?, p1: Int) {}
 
 }
-
 
 @Composable
 fun TitleScreen(
@@ -182,11 +181,10 @@ fun GameScreen(
     onPauseClick: () -> Unit,
     onTimeFinished: () -> Unit,
     player: Circle, initPositionX: Float, initPositionY: Float, WinCondition: () -> Unit
-
 ) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopEnd) {
         Button(onPauseClick) {
-            Text("||")
+            Text("Exit")
         }
     }
     ShowTime()
@@ -318,7 +316,7 @@ fun ShowTime() : Boolean{
     var finished by remember { mutableStateOf(false) }
     // INITIAL TIME
     val seconds = 60
-    val minutes = 0
+    val minutes = 2
     var elapsedMls by remember {mutableLongStateOf(0L)}
     var elapsedScnds by remember {mutableIntStateOf(seconds)}
 
