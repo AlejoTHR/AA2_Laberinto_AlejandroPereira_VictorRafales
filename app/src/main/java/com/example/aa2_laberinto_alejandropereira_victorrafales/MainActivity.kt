@@ -50,7 +50,6 @@ import kotlinx.coroutines.delay
 import kotlin.math.abs
 
 
-
 // PARA LOS RECTANGULOS
 data class Rect(
     var width: Float = 0f,
@@ -74,18 +73,17 @@ private var z by mutableFloatStateOf(0f)
 private var test_text by mutableStateOf("")
 
 
+
 class MainActivity : ComponentActivity(), SensorEventListener {
 
     private lateinit var sensorManager: SensorManager
-
     var player by mutableStateOf(Circle(70f,250f,10f))
     val initPositionX = player.posX
     val initPositionY = player.posY
 
-    // CONDITIONS
-    var timeFinished by mutableStateOf(2)
-    var isPaused by mutableStateOf(false)
-    
+
+
+
     // SENSOR MANAGER
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -103,10 +101,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             AA2_Laberinto_AlejandroPereira_VictorRafalesTheme {
                 val navController = rememberNavController()
 
-
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-
-
                     NavHost(
                         navController, "home",
                         modifier = Modifier.padding(innerPadding)
@@ -116,13 +111,18 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
                         }
                         composable("secondary") {
-                            GameScreen(onBtnClick = { navController.navigate("WinScreen")})
 
-                            ShowTime()
-                            BallGamLogic( player, modifier = Modifier.padding(innerPadding), initPositionX, initPositionY, WinCondition = { navController.navigate("WinScreen")})
+                            GameScreen(Modifier, { }, {navController.navigate("LoseScreen")},
+
+                                // BALL GAME LOGIC fun
+                                player, initPositionX, initPositionY, WinCondition = { navController.navigate("WinScreen")})
+
                         }
                         composable("WinScreen") {
-                            WinScreen({navController.popBackStack()}, {/*FUN CREATED BELLOW*/ goHome(navController)})
+                            WinScreen({navController.popBackStack()}, { goHome(navController) })
+                        }
+                        composable("LoseScreen") {
+                            LoseScreen({navController.popBackStack()}, { goHome(navController) })
                         }
 
                     }
@@ -179,15 +179,23 @@ fun TitleScreen(
 @Composable
 fun GameScreen(
     modifier: Modifier = Modifier,
-    onBtnClick: () -> Unit
+    onPauseClick: () -> Unit,
+    onTimeFinished: () -> Unit,
+    player: Circle, initPositionX: Float, initPositionY: Float, WinCondition: () -> Unit
+
 ) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopEnd) {
-        Button(onClick = onBtnClick) {
-            Text("Exit")
+        Button(onPauseClick) {
+            Text("||")
         }
     }
+    ShowTime()
 
+    if(ShowTime()){
+        onTimeFinished()
+    }
 
+    BallGamLogic(player, Modifier, initPositionX, initPositionY, WinCondition)
 }
 
 // GO HOME FROM WINSCREEN
@@ -237,6 +245,44 @@ fun WinScreen(playAgainBtn:()-> Unit, titleBtn:()->Unit){
 
 }
 
+@Composable
+fun LoseScreen(onPlayAgainClick:()->Unit,onGoBackClick:()->Unit ){
+    Column(Modifier.fillMaxSize()) {
+        Box(Modifier.fillMaxSize().weight(0.7f), contentAlignment = Alignment.Center){
+            Image(
+                painter = painterResource(R.drawable.loose),
+                contentDescription = "Logo",
+            )
+        }
+        Box(Modifier.fillMaxSize().weight(0.2f), contentAlignment = Alignment.Center){
+            Text(
+                text = "TIME OUT",
+                fontSize = 36.sp,
+            )
+        }
+        Box(Modifier.fillMaxSize().weight(0.1f), contentAlignment = Alignment.Center) {
+            Button(onPlayAgainClick, Modifier.width(200.dp).height(150.dp))
+            {
+                Text(
+                    text = "PLAY AGAIN",
+                    fontSize = 26.sp,
+                )
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        Box(Modifier.fillMaxSize().weight(0.1f), contentAlignment = Alignment.Center) {
+            Button(onGoBackClick, Modifier.width(200.dp).height(150.dp))
+            {
+                Text(
+                    text = "GO BACK",
+                    fontSize = 36.sp,
+                )
+            }
+        }
+
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 fun TittleScreenPreview() {
@@ -261,28 +307,27 @@ fun SensorScreen(x:Float , y: Float, z:Float, modifier: Modifier){
         //TextField(value = y.toString(), onValueChange = {}, label = {Text("Y")}, readOnly = true)
         //TextField(value = z.toString(), onValueChange = {}, label = {Text("Z")}, readOnly = true)
         //TextField(value= test_text, onValueChange = {}, label = {}, readOnly = true)
-        ShowTime()
     }
 }
 
 
 // SHOW ELAPSED TIME
 @Composable
-fun ShowTime(){
+fun ShowTime() : Boolean{
+    // SET COUNT DOWN VARS
+    var finished by remember { mutableStateOf(false) }
     // INITIAL TIME
     val seconds = 60
-    val minutes = 2
+    val minutes = 0
+    var elapsedMls by remember {mutableLongStateOf(0L)}
+    var elapsedScnds by remember {mutableIntStateOf(seconds)}
 
-    // SET COUNT DOWN VARS
+    var elapsedMnts by remember {mutableIntStateOf(minutes)}
+
     val starTime = remember { SystemClock.elapsedRealtime() }
-    var elapsedMls by remember { mutableLongStateOf(0L) }
-    var elapsedScnds by remember { mutableIntStateOf(seconds) }
-    var elapsedMnts by remember { mutableIntStateOf(minutes) }
-
     LaunchedEffect(Unit) {
         while (true){
             delay(100)
-
             // SUBSTRACT SECONDS
             if(elapsedMls < 99) elapsedMls = SystemClock.elapsedRealtime()-starTime
             else {
@@ -298,21 +343,20 @@ fun ShowTime(){
             if(elapsedMnts < 0){
                 elapsedMnts = 0
                 elapsedScnds = 0
-                elapsedScnds = 0
                 elapsedMls = 0
+                finished = true
+                break
             }
-
         }
-
     }
     if(elapsedScnds <= 9){
         Text("Time: 0$elapsedMnts : 0$elapsedScnds")
     }
-    else if(elapsedScnds >= 10){
+    else if(elapsedScnds >= 10) {
         Text("Time: 0$elapsedMnts : $elapsedScnds")
     }
 
-
+    return finished
 }
 
 
@@ -478,25 +522,25 @@ fun BallGamLogic(player : Circle, modifier: Modifier, initPositionX : Float, ini
             // RECTANGLES - MAP LIMITS
             // RECTANGLE TOP
             drawRect(
-                color = Color.Black,
+                color = Color.Gray,
                 size = Size(rectangleTop.width.dp.toPx(),rectangleTop.height.dp.toPx()),
                 topLeft = Offset(rectangleTop.posX.dp.toPx(),rectangleTop.posY.dp.toPx())
             )
             // RECTANGLE DOWN
             drawRect(
-                color = Color.Black,
+                color = Color.Gray,
                 size = Size(rectangleDown.width.dp.toPx(), rectangleDown.height.dp.toPx()),
                 topLeft = Offset(rectangleDown.posX.dp.toPx(), rectangleDown.posY.dp.toPx())
             )
             // RECTANGLE LEFT
             drawRect(
-                color = Color.Black,
+                color = Color.Gray,
                 size = Size(rectangleLeft.width.dp.toPx(),rectangleLeft.height.dp.toPx()),
                 topLeft = Offset(rectangleLeft.posX.dp.toPx(),rectangleLeft.posY.dp.toPx())
             )
             // RECTANGLE RIGHT
             drawRect(
-                color = Color.Black,
+                color = Color.Gray,
                 size = Size(rectangleRight.width.dp.toPx(),rectangleRight.height.dp.toPx()),
                 topLeft = Offset(rectangleRight.posX.dp.toPx(), rectangleRight.posY.dp.toPx())
             )
@@ -504,84 +548,85 @@ fun BallGamLogic(player : Circle, modifier: Modifier, initPositionX : Float, ini
             // RECTANGLES - MAP INSIDE
             // RECTANGLE 1
             drawRect(
-                color = Color.Black,
+                color = Color.Gray,
                 size = Size(rectangle1.width.dp.toPx(),rectangle1.height.dp.toPx()),
                 topLeft = Offset(rectangle1.posX.dp.toPx(),rectangle1.posY.dp.toPx())
             )
             // RECTANGLE 2
             drawRect(
-                color = Color.Black,
+                color = Color.Gray,
                 size = Size(rectangle2.width.dp.toPx(), rectangle2.height.dp.toPx()),
                 topLeft = Offset(rectangle2.posX.dp.toPx(), rectangle2.posY.dp.toPx())
             )
             // RECTANGLE 3
             drawRect(
-                color = Color.Black,
+                color = Color.Gray,
                 size = Size(rectangle3.width.dp.toPx(),rectangle3.height.dp.toPx()),
                 topLeft = Offset(rectangle3.posX.dp.toPx(),rectangle3.posY.dp.toPx())
             )
             // RECTANGLE 4
             drawRect(
-                color = Color.Black,
+                color = Color.Gray,
                 size = Size(rectangle4.width.dp.toPx(),rectangle4.height.dp.toPx()),
                 topLeft = Offset(rectangle4.posX.dp.toPx(), rectangle4.posY.dp.toPx())
             )
             // RECTANGLE 5
             drawRect(
-                color = Color.Black,
+                color = Color.Gray,
                 size = Size(rectangle5.width.dp.toPx(),rectangle5.height.dp.toPx()),
                 topLeft = Offset(rectangle5.posX.dp.toPx(), rectangle5.posY.dp.toPx())
             )
             // RECTANGLE 6
             drawRect(
-                color = Color.Black,
+                color = Color.Gray,
                 size = Size(rectangle6.width.dp.toPx(),rectangle6.height.dp.toPx()),
                 topLeft = Offset(rectangle6.posX.dp.toPx(), rectangle6.posY.dp.toPx())
             )
             // RECTANGLE 7
             drawRect(
-                color = Color.Black,
+                color = Color.Gray,
                 size = Size(rectangle7.width.dp.toPx(),rectangle7.height.dp.toPx()),
                 topLeft = Offset(rectangle7.posX.dp.toPx(), rectangle7.posY.dp.toPx())
             )
             // RECTANGLE 8
             drawRect(
-                color = Color.Black,
+                color = Color.Gray,
                 size = Size(rectangle8.width.dp.toPx(),rectangle8.height.dp.toPx()),
                 topLeft = Offset(rectangle8.posX.dp.toPx(), rectangle8.posY.dp.toPx())
             )
             // RECTANGLE 9
             drawRect(
-                color = Color.Black,
+                color = Color.Gray,
                 size = Size(rectangle9.width.dp.toPx(),rectangle9.height.dp.toPx()),
                 topLeft = Offset(rectangle9.posX.dp.toPx(), rectangle9.posY.dp.toPx())
             )
             // RECTANGLE 10
             drawRect(
-                color = Color.Black,
+                color = Color.Gray,
                 size = Size(rectangle10.width.dp.toPx(),rectangle10.height.dp.toPx()),
                 topLeft = Offset(rectangle10.posX.dp.toPx(), rectangle10.posY.dp.toPx())
             )
             // RECTANGLE 11
             drawRect(
-                color = Color.Black,
+                color = Color.Gray,
                 size = Size(rectangle11.width.dp.toPx(),rectangle11.height.dp.toPx()),
                 topLeft = Offset(rectangle11.posX.dp.toPx(), rectangle11.posY.dp.toPx())
             )
             // RECTANGLE 12
             drawRect(
-                color = Color.Black,
+                color = Color.Gray,
                 size = Size(rectangle12.width.dp.toPx(),rectangle12.height.dp.toPx()),
                 topLeft = Offset(rectangle12.posX.dp.toPx(), rectangle12.posY.dp.toPx())
             )
             // RECTANGLE 13
             drawRect(
-                color = Color.Black,
+                color = Color.Gray,
                 size = Size(rectangle13.width.dp.toPx(),rectangle13.height.dp.toPx()),
                 topLeft = Offset(rectangle13.posX.dp.toPx(), rectangle13.posY.dp.toPx())
             )
         }
     }
+
 
     //region NOT DIAGONALS
 //            speedX = 0f
