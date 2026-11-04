@@ -59,11 +59,14 @@ data class Rect(
     var posY: Float = 0f
 )
 
-data class Circle(
-    var posX: Float = 0f,
-    var posY: Float = 0f,
+class Circle(
+    posX: Float = 0f,
+    posY: Float = 0f,
     var radius: Float = 0f
-)
+){
+    var posX by mutableFloatStateOf(posX)
+    var posY by mutableFloatStateOf(posY)
+}
 
 // RECTANGLES FOR MAZE
 
@@ -73,6 +76,8 @@ private var y by mutableFloatStateOf(0f)
 private var z by mutableFloatStateOf(0f)
 private var test_text by mutableStateOf("")
 
+private var savedTime = ""
+var gameStop by mutableStateOf(false)
 
 
 class MainActivity : ComponentActivity(), SensorEventListener {
@@ -81,7 +86,6 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     var player by mutableStateOf(Circle(70f,250f,10f))
     val initPositionX = player.posX
     val initPositionY = player.posY
-
 
 
     // SENSOR MANAGER
@@ -115,7 +119,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
                             GameScreen(Modifier, { goHome(navController)}, {navController.navigate("LoseScreen")},
 
                                 // BALL GAME LOGIC fun
-                                player, initPositionX, initPositionY, WinCondition = { navController.navigate("WinScreen")},)
+                                player, initPositionX, initPositionY, WinCondition = { navController.navigate("WinScreen")} )
 
                         }
                         composable("WinScreen") {
@@ -187,13 +191,26 @@ fun GameScreen(
             Text("Exit")
         }
     }
-    ShowTime()
 
-    if(ShowTime()){
+    val timeFinished : Boolean = ShowTime()
+
+    if(timeFinished){
         onTimeFinished()
     }
 
     BallGamLogic(player, Modifier, initPositionX, initPositionY, WinCondition)
+
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+        if(!gameStop){
+            Button(onClick = { gameStop = true }) {
+                Text("Pause")
+            }
+        }else {
+            Button(onClick = { gameStop = false }) {
+                Text("Resume")
+            }
+        }
+    }
 }
 
 // GO HOME FROM WINSCREEN
@@ -216,6 +233,12 @@ fun WinScreen(playAgainBtn:()-> Unit, titleBtn:()->Unit){
         Box(Modifier.fillMaxSize().weight(0.2f), contentAlignment = Alignment.Center){
             Text(
                 text = "YOU WIN",
+                fontSize = 36.sp,
+            )
+        }
+        Box(Modifier.fillMaxSize().weight(0.2f), contentAlignment = Alignment.Center){
+            Text(
+                text = SaveTime(),
                 fontSize = 36.sp,
             )
         }
@@ -308,7 +331,12 @@ fun SensorScreen(x:Float , y: Float, z:Float, modifier: Modifier){
     }
 }
 
-
+// SAVE FINAL TIME
+@Composable
+fun SaveTime(time: String = savedTime): String {
+    savedTime = time
+    return savedTime
+}
 // SHOW ELAPSED TIME
 @Composable
 fun ShowTime() : Boolean{
@@ -326,6 +354,9 @@ fun ShowTime() : Boolean{
     LaunchedEffect(Unit) {
         while (true){
             delay(100)
+
+            if (gameStop) {continue}
+
             // SUBSTRACT SECONDS
             if(elapsedMls < 99) elapsedMls = SystemClock.elapsedRealtime()-starTime
             else {
@@ -349,18 +380,20 @@ fun ShowTime() : Boolean{
     }
     if(elapsedScnds <= 9){
         Text("Time: 0$elapsedMnts : 0$elapsedScnds")
+        SaveTime("Time: 0$elapsedMnts : 0$elapsedScnds")
+
     }
     else if(elapsedScnds >= 10) {
         Text("Time: 0$elapsedMnts : $elapsedScnds")
+        SaveTime("Time: 0$elapsedMnts : $elapsedScnds")
     }
-
     return finished
 }
 
 
 // COLLISIONS
 fun intersects (circle : Circle , rect : Rect) : Boolean{
-    Log.d("Intersect", "Circle [$circle] | Rectangle [$rect]")
+    //Log.d("Intersect", "Circle [$circle] | Rectangle [$rect]")
     
     /*
     if(circle.posX >= rect.posX && circle.posX <= rect.posX + rect.width &&
@@ -426,6 +459,8 @@ fun BallGamLogic(player : Circle, modifier: Modifier, initPositionX : Float, ini
             while (!gameEnd) {
                 delay(16)
 
+                if (gameStop) {continue}
+
                 // DETEECTION END GAME
                 if (intersects(player, endGame)) {
                     gameEnd = true
@@ -438,53 +473,60 @@ fun BallGamLogic(player : Circle, modifier: Modifier, initPositionX : Float, ini
                 val nextX = -x * speedX
                 val nextY = y * speedY
 
-                player.posX += nextX
-                player.posY += nextY
-
                 //DETECTION MAP HORIZONTAL
-                if (intersects(player, rectangleTop) ||
-                    intersects(player, rectangleLeft) ||
-                    intersects(player, rectangleRight) ||
-                    intersects(player, rectangleDown) ||
-                    intersects(player, rectangle1) ||
-                    intersects(player, rectangle2) ||
-                    intersects(player, rectangle3) ||
-                    intersects(player, rectangle4) ||
-                    intersects(player, rectangle5) ||
-                    intersects(player, rectangle6) ||
-                    intersects(player, rectangle7) ||
-                    intersects(player, rectangle8) ||
-                    intersects(player, rectangle9) ||
-                    intersects(player, rectangle10) ||
-                    intersects(player, rectangle11) ||
-                    intersects(player, rectangle12) ||
-                    intersects(player, rectangle13)
-                ) {
+                player.posX += nextX
+
+                val collisionsX =(
+                            intersects(player, rectangleTop) ||
+                            intersects(player, rectangleLeft) ||
+                            intersects(player, rectangleRight) ||
+                            intersects(player, rectangleDown) ||
+                            intersects(player, rectangle1) ||
+                            intersects(player, rectangle2) ||
+                            intersects(player, rectangle3) ||
+                            intersects(player, rectangle4) ||
+                            intersects(player, rectangle5) ||
+                            intersects(player, rectangle6) ||
+                            intersects(player, rectangle7) ||
+                            intersects(player, rectangle8) ||
+                            intersects(player, rectangle9) ||
+                            intersects(player, rectangle10) ||
+                            intersects(player, rectangle11) ||
+                            intersects(player, rectangle12) ||
+                            intersects(player, rectangle13))
+
+                if (collisionsX) {
                     //test_text = "COLLISION " + x.toString() + ", " + y.toString()
                     player.posX -= nextX
+
                 } else {
                     //test_text = "NO COLLISION" + x.toString() + ", " + y.toString()
                 }
 
                 //DETECTION MAP VERTICAL
-                if (intersects(player, rectangleTop) ||
-                    intersects(player, rectangleLeft) ||
-                    intersects(player, rectangleRight) ||
-                    intersects(player, rectangleDown) ||
-                    intersects(player, rectangle1) ||
-                    intersects(player, rectangle2) ||
-                    intersects(player, rectangle3) ||
-                    intersects(player, rectangle4) ||
-                    intersects(player, rectangle5) ||
-                    intersects(player, rectangle6) ||
-                    intersects(player, rectangle7) ||
-                    intersects(player, rectangle8) ||
-                    intersects(player, rectangle9) ||
-                    intersects(player, rectangle10) ||
-                    intersects(player, rectangle11) ||
-                    intersects(player, rectangle12) ||
-                    intersects(player, rectangle13)
-                ) {
+                player.posY += nextY
+
+                val collisionsY =(
+                        intersects(player, rectangleTop) ||
+                                intersects(player, rectangleLeft) ||
+                                intersects(player, rectangleRight) ||
+                                intersects(player, rectangleDown) ||
+                                intersects(player, rectangle1) ||
+                                intersects(player, rectangle2) ||
+                                intersects(player, rectangle3) ||
+                                intersects(player, rectangle4) ||
+                                intersects(player, rectangle5) ||
+                                intersects(player, rectangle6) ||
+                                intersects(player, rectangle7) ||
+                                intersects(player, rectangle8) ||
+                                intersects(player, rectangle9) ||
+                                intersects(player, rectangle10) ||
+                                intersects(player, rectangle11) ||
+                                intersects(player, rectangle12) ||
+                                intersects(player, rectangle13))
+
+                if (collisionsY)
+                 {
                     //test_text = "COLLISION " + x.toString() + ", " + y.toString()
                     player.posY -= nextY
 
